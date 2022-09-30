@@ -2,9 +2,13 @@ const EDIT_MODE = getParameter("edit_mode")
 const LEVEL_ID = getParameter("level") || 0
 const RADIUS = 60
 
+function getPlayerSize(name) {
+    return RADIUS / 2
+}
+
 function MouseHandler() {
     const mouse = {
-        currentHex: Hex(0, 0),
+        hex: Hex(0, 0),
         position: { x: 0, y: 0 } 
     }
 
@@ -80,6 +84,55 @@ function CameraHandler() {
     })
 }
 
+function doPlayersOverlap(a, b) {
+    const distance = Math.pow(Math.abs(a.sprite.x - b.sprite.x), 2)
+                   + Math.pow(Math.abs(a.sprite.y - b.sprite.y), 2)
+
+    return distance < Math.pow(getPlayerSize(a) + getPlayerSize(b), 2)
+}
+
+let speed = 1
+
+function PlayerHandler() {
+    game.ticker.add(() => {
+        for (const npc of npcs) {
+            for (const player of players) {
+                if (doPlayersOverlap(npc, player)) {
+                    speed = 0
+                    alert("You win!")
+                }
+            }
+        }
+    })
+
+    game.ticker.add(() => {
+        const dt = speed * game.ticker.deltaMS / 1000
+
+        for (const player of players) {
+            movePlayer(player, dt)
+        }
+
+        for (const npc of npcs) {
+            if (!movePlayer(npc, dt)) {
+                let distance = 0
+                let farthest = Hex(0, 0)
+                for (const hex of getAllWalkableHexs()) {
+                    if (isWalkable(hex)) {
+                        if (getHexDistanceFromPlayers(hex) > distance) {
+                            distance = getHexDistanceFromPlayers(hex)
+                            farthest = hex
+                        }
+                    }
+                }
+
+                if (!equals(farthest, npc.hex)) {
+                    setPlayerPath(npc, pathfind2(npc.hex, farthest).slice(-2))
+                }
+            }
+        }
+    })
+}
+
 function movePlayer(player, dt) {
     // if they have no path, then they can't move
     // return false to indicate the player needs a new path
@@ -106,6 +159,9 @@ function movePlayer(player, dt) {
 }
 
 function setPlayerPath(player, path) {
+    // There is no path, meaning it failed. Continue doing as before.
+    if (path.length === 0) return
+
     // set coords
     player.hex = path.pop()
     player.path = path
@@ -125,35 +181,6 @@ function getHexDistanceFromPlayers(hex) {
     return distance
 }
 
-function PlayerHandler() {
-    game.ticker.add(() => {
-        const dt = game.ticker.deltaMS / 1000
-
-        for (const player of players) {
-            movePlayer(player, dt)
-        }
-
-        for (const npc of npcs) {
-            if (!movePlayer(npc, dt)) {
-                let distance = 0
-                let farthest = Hex(0, 0)
-                for (const hex of getAllWalkableHexs()) {
-                    if (isWalkable(hex)) {
-                        if (getHexDistanceFromPlayers(hex) > distance) {
-                            distance = getHexDistanceFromPlayers(hex)
-                            farthest = hex
-                        }
-                    }
-                }
-
-                if (!equals(farthest, npc.hex)) {
-                    setPlayerPath(npc, pathfind(npc.hex, farthest).slice(-2))
-                }
-            }
-        }
-    })
-}
-
 function isUserControlled(name) {
     return name === "elephant-1" || name === "elephant-2"
 }
@@ -162,7 +189,7 @@ function Player({ name, hex }) {
     // Draw player sprite
     let sprite = new PIXI.Graphics()
     sprite.beginFill(0xffffff)
-    sprite.drawCircle(0, 0, RADIUS / 2)
+    sprite.drawCircle(0, 0, getPlayerSize(name))
     let { x, y } = hexToPixel(hex)
     sprite.x = x
     sprite.y = y
