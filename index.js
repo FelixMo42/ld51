@@ -117,6 +117,14 @@ function setPlayerPath(player, path) {
     }
 }
 
+function getHexDistanceFromPlayers(hex) {
+    let distance = 0
+    for (const player of players) {
+        distance += getHexDistance(player.hex, hex)
+    }
+    return distance
+}
+
 function PlayerHandler() {
     game.ticker.add(() => {
         const dt = game.ticker.deltaMS / 1000
@@ -127,18 +135,20 @@ function PlayerHandler() {
 
         for (const npc of npcs) {
             if (!movePlayer(npc, dt)) {
-                let path = []
-
-                for (const hex of getHexNeighbors(npc.hex)) {
+                let distance = 0
+                let farthest = Hex(0, 0)
+                for (const hex of getAllWalkableHexs()) {
                     if (isWalkable(hex)) {
-                        path.push(hex)
-                        break
+                        if (getHexDistanceFromPlayers(hex) > distance) {
+                            distance = getHexDistanceFromPlayers(hex)
+                            farthest = hex
+                        }
                     }
                 }
 
-                path.push(npc.hex)
-
-                setPlayerPath(npc, path)
+                if (!equals(farthest, npc.hex)) {
+                    setPlayerPath(npc, pathfind(npc.hex, farthest).slice(-2))
+                }
             }
         }
     })
