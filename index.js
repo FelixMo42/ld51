@@ -155,7 +155,7 @@ function save() {
 
 function start() {
     // Create the hex that follows the mouse around
-    const mouse = createMouseHandler()
+    createMouseHandler()
     
     game.ticker.add(() => {
         const dt = game.ticker.deltaMS / 1000
