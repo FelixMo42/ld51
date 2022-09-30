@@ -1,7 +1,8 @@
 const EDIT_MODE = getParameter("edit_mode")
 const LEVEL_ID = getParameter("level") || 0
+const RADIUS = 60
 
-function createMouseHandler() {
+function MouseHandler() {
     const mouse = {
         currentHex: Hex(0, 0),
         position: { x: 0, y: 0 } 
@@ -25,12 +26,7 @@ function createMouseHandler() {
 
     window.onmousedown = (e) => {
         if (!e.shiftKey) {
-            player.hex = pixelToHex(player.sprite)
-            player.path = pathfind(player.hex, mouse.hex).slice(0, -1)
-            if (player.path.length > 0) {
-                player.distance = getHexDistance(player.hex, player.path[player.path.length - 1])
-                player.travled = 0
-            }
+            setPlayerPath(player, pathfind(pixelToHex(player.sprite), mouse.hex))
             rotatePlayers()
         }
 
@@ -64,24 +60,121 @@ function createMouseHandler() {
     return mouse
 }
 
-function Player(startHex) {
-    //
+function CameraHandler() {
+    game.ticker.add(() => {
+        let x = 0
+        let y = 0
+
+        for (let player of players) {
+            x += player.sprite.x
+            y += player.sprite.y
+        }
+
+        x = x / players.length
+        y = y / players.length
+
+        game.stage.x = -x + window.innerWidth / 2
+        game.stage.y = -y + window.innerHeight / 2
+
+
+    })
+}
+
+function movePlayer(player, dt) {
+    // if they have no path, then they can't move
+    // return false to indicate the player needs a new path
+    if (player.path.length === 0) {
+        return false
+    }
+
+    // incrament the distance travled counter
+    player.travled += dt
+
+    if (player.travled >= player.distance) {
+        setPlayerPath(player, player.path)
+    } else {
+        // move it move it
+        let a = hexToPixel(player.hex)
+        let b = hexToPixel(player.path[player.path.length - 1])
+        let percent = player.travled / player.distance
+        player.sprite.x = interpolate(percent, a.x, b.x)
+        player.sprite.y = interpolate(percent, a.y, b.y)
+    }
+    
+    // return true to say that yes, the player moved this frame
+    return true
+}
+
+function setPlayerPath(player, path) {
+    // set coords
+    player.hex = path.pop()
+    player.path = path
+
+    // set movement timers
+    if (player.path.length > 0) {
+        player.distance = getHexDistance(player.hex, player.path[player.path.length - 1])
+        player.travled = 0
+    }
+}
+
+function PlayerHandler() {
+    game.ticker.add(() => {
+        const dt = game.ticker.deltaMS / 1000
+
+        for (const player of players) {
+            movePlayer(player, dt)
+        }
+
+        for (const npc of npcs) {
+            if (!movePlayer(npc, dt)) {
+                let path = []
+
+                for (const hex of getHexNeighbors(npc.hex)) {
+                    if (isWalkable(hex)) {
+                        path.push(hex)
+                        break
+                    }
+                }
+
+                path.push(npc.hex)
+
+                setPlayerPath(npc, path)
+            }
+        }
+    })
+}
+
+function isUserControlled(name) {
+    return name === "elephant-1" || name === "elephant-2"
+}
+
+function Player({ name, hex }) {
+    // Draw player sprite
     let sprite = new PIXI.Graphics()
     sprite.beginFill(0xffffff)
     sprite.drawCircle(0, 0, RADIUS / 2)
-    let { x, y } = hexToPixel(startHex)
+    let { x, y } = hexToPixel(hex)
     sprite.x = x
     sprite.y = y
     game.stage.addChild(sprite)
     
-    return {
+    const player = {
+        hex,
+        name,
+
+        // 
         sprite,
-        hex: startHex,
         path: [],
         
         // used for smooth player movment
         distance: 0,
         travled: 0
+    }
+
+    if (isUserControlled(name)) {
+        players.push(player)
+    } else {
+        npcs.push(player)
     }
 }
 
@@ -122,6 +215,7 @@ function selectPlayer(id) {
 
 // list of all players in the scene
 const players = []
+const npcs = []
 
 async function init() {
     // retrive level data
@@ -134,7 +228,7 @@ async function init() {
 
     // add players
     for (const player of level.players) {
-        players.push(Player(player.hex))
+        Player(player)
     }
     
     // select the first one
@@ -154,43 +248,9 @@ function save() {
 }
 
 function start() {
-    // Create the hex that follows the mouse around
-    createMouseHandler()
-    
-    game.ticker.add(() => {
-        const dt = game.ticker.deltaMS / 1000
-
-        for (const player of players) {
-            if (player.path.length > 0) {
-                // incrament the distance travled counter
-                player.travled += dt
-
-                if (player.travled >= player.distance) {
-                    // 
-                    player.hex = player.path.pop()
-
-                    // reset the player position to the hex to stop drift
-                    let { x, y } = hexToPixel(player.hex)
-                    player.sprite.x = x
-                    player.sprite.y = y
-
-                    // reset the counters
-                    player.distance = 1
-                    player.travled = 0
-                } else {
-                    // move it move it
-                    let a = hexToPixel(player.hex)
-                    let b = hexToPixel(player.path[player.path.length - 1])
-                    let percent = player.travled / player.distance
-                    player.sprite.x = interpolate(percent, a.x, b.x)
-                    player.sprite.y = interpolate(percent, a.y, b.y)
-                }
-            }
-        }
-
-        game.stage.x = -player.sprite.x + window.innerWidth / 2
-        game.stage.y = -player.sprite.y + window.innerHeight / 2
-    })
+    MouseHandler()
+    CameraHandler()
+    PlayerHandler()    
 }
 
 init()
