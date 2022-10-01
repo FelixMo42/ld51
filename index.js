@@ -4,14 +4,41 @@ const RADIUS = 60
 // create the app, and it too the canvase, but don't make it visible
 const game = new PIXI.Application({ resizeTo: window })
 document.body.appendChild(game.view)
-// game.stage.renderable = false
 
 // start the game
 const mouse = MouseHandler()
 const camera = CameraHandler()
-PlayerHandler()    
+PlayerHandler()
 
 function level1() {
+    let carpet = PIXI.Sprite.from("./img/carpet.jpg")
+    carpet.x = -60 
+    carpet.y = -60
+    carpet.alpha = 0.7
+
+    let wallRight = PIXI.Sprite.from("./img/wall.png")
+    wallRight.x = 60 
+    wallRight.y = -288
+
+    let wallLeft = PIXI.Sprite.from("./img/wall.png")
+    wallLeft.x = -60 
+    wallLeft.y = -288
+
+    let twin = PIXI.Sprite.from("./img/elephant-2.png")
+    twin.x = -50 
+    twin.y = 1000
+
+    wallLeft.scale.x *= -1
+
+    let sprites = [
+        carpet,
+        wallRight,
+        wallLeft,
+        twin
+    ]
+
+    sprites.forEach(sprite => game.stage.addChild(sprite))
+
     setStage({
         path: rowOfHexs(10),
         players: [
@@ -23,7 +50,10 @@ function level1() {
         cameraMode: "follow",
     })
 
-    return () => {}
+
+    return () => {
+        sprites.forEach(sprite => game.stage.removeChild(sprite))
+    }
 }
 
 function level2() {
@@ -228,13 +258,6 @@ function sleep(seconds) {
 }
 
 run()
-
-if (false) {
-    window.onmousedown = () => {
-        updateHexFill(mouse.hex)
-        console.log(mouse.hex)
-    }
-}
 
 function saveHexs() {
     for (const hex of walkableGraphics.keys()) {
