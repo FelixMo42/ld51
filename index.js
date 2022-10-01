@@ -1,5 +1,6 @@
 const EDIT_MODE = getParameter("edit_mode")
 const LEVEL_ID = getParameter("level") || 0
+const SAVE_ID = getParameter("save_id")
 const RADIUS = 60
 
 function getPlayerSize(name) {
@@ -250,9 +251,17 @@ function selectPlayer(id) {
 const players = []
 const npcs = []
 
+function loadLevel() {
+    if (SAVE_ID) {
+        return JSON.parse(localStorage.getItem(SAVE_ID))
+    } else {
+        return fetch(`./lvl/${LEVEL_ID}.json`).then(res => res.json())
+    }
+}
+
 async function init() {
     // retrive level data
-    const level = await fetch(`./lvl/${LEVEL_ID}.json`).then(res => res.json())
+    const level = await loadLevel()
 
     // add walkable paths
     for (const hex of level.path) {
@@ -271,13 +280,22 @@ async function init() {
     start()
 }
 
-function save() {
-    navigator.clipboard.writeText(JSON.stringify({
+async function save() {
+    let text = JSON.stringify({
         path: getAllWalkableHexs(),
         players: players.map((player) => ({
+            name: player.name,
             hex: player.hex
-        })),
-    }))
+        }))
+    })
+    
+    const name = await prompt("save name")
+    localStorage.setItem(name, text)
+    navigator.clipboard.writeText(text)
+}
+
+async function load() {
+
 }
 
 function start() {
@@ -293,9 +311,14 @@ let selectedPlayer = -1;
 let player = null
 
 if (EDIT_MODE) {
-    document.onkeyup = (e) => {
+    document.onkeyup = async (e) => {
         if (e.key === "s") {
             save()
+        } else if (e.key === "l") {
+            let name = prompt("save name")
+            let url = new URL(window.location.href)
+            url.searchParams.set('save_id', name)
+            window.location.href = url
         }
     }
 }
