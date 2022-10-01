@@ -70,23 +70,13 @@ function MouseHandler() {
 }
 
 function CameraHandler() {
-    game.ticker.add(() => {
-        let x = 0
-        let y = 0
+    game.stage.x = window.innerWidth / 2
+    game.stage.y = window.innerHeight / 2
 
-        for (let player of players) {
-            x += player.sprite.x
-            y += player.sprite.y
-        }
-
-        x = x / players.length
-        y = y / players.length
-
-        game.stage.x = -x + window.innerWidth / 2
-        game.stage.y = -y + window.innerHeight / 2
-
-
-    })
+    window.onresize = () => {
+        game.stage.x = window.innerWidth / 2
+        game.stage.y = window.innerHeight / 2
+    }
 }
 
 function doPlayersOverlap(a, b) {
