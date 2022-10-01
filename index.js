@@ -3,7 +3,12 @@ const LEVEL_ID = getParameter("level") || 0
 const RADIUS = 60
 
 function getPlayerSize(name) {
-    return RADIUS / 2
+    return RADIUS * 3/4
+}
+
+function getPlayerSpeed(player) {
+    if (player.name === "rover") return 1.5
+    return 1
 }
 
 function MouseHandler() {
@@ -141,7 +146,7 @@ function movePlayer(player, dt) {
     }
 
     // incrament the distance travled counter
-    player.travled += dt
+    player.travled += dt * getPlayerSpeed(player)
 
     if (player.travled >= player.distance) {
         setPlayerPath(player, player.path)
@@ -186,10 +191,11 @@ function isUserControlled(name) {
 }
 
 function Player({ name, hex }) {
-    // Draw player sprite
-    let sprite = new PIXI.Graphics()
-    sprite.beginFill(0xffffff)
-    sprite.drawCircle(0, 0, getPlayerSize(name))
+    // Load player sprite
+    let sprite = new PIXI.Sprite.from(`./img/${name}.png`)
+    sprite.anchor.set(0.5)
+    sprite.width = getPlayerSize() * 2
+    sprite.height = getPlayerSize() * 2
     let { x, y } = hexToPixel(hex)
     sprite.x = x
     sprite.y = y
