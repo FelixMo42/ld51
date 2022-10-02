@@ -40,7 +40,7 @@ function level1() {
     sprites.forEach(sprite => game.stage.addChild(sprite))
 
     setStage({
-        path: rowOfHexs(10),
+        path: rowOfHexs(20),
         players: [
             {
                 name: "elephant-1",
@@ -57,6 +57,17 @@ function level1() {
 }
 
 function level2() {
+    let island = PIXI.Sprite.from("./img/island.png")
+    island.anchor.set(0.5)
+    island.x = -20 
+    island.y = -60
+
+    let sprites = [
+        island
+    ]
+
+    sprites.forEach(sprite => game.stage.addChild(sprite))
+
     setStage({
         path: [Hex(0, 0),Hex(-1, -1),Hex(0, 1),Hex(-1, 1),Hex(-2, 1),Hex(-3, 2),Hex(1, -2),Hex(0, 2),Hex(1, 2),Hex(-2, -1),Hex(-3, -1),Hex(-4, 0),Hex(-4, 1),Hex(2, -2),Hex(2, -1),Hex(2, 0),Hex(2, 1),Hex(-1, 3),Hex(-2, 3),Hex(-1, -2),Hex(0, -3),Hex(1, -4),Hex(2, -4),Hex(3, -4),Hex(4, -3),Hex(4, -4),Hex(3, -2),Hex(5, -3),Hex(5, -2),Hex(5, -1),Hex(4, 0),Hex(3, 1),Hex(0, -1),Hex(-5, 3),Hex(-6, 3),Hex(-5, 2),Hex(-4, 2),Hex(-5, 4),Hex(-4, 4),Hex(-3, 4)],
         players: [
@@ -76,7 +87,9 @@ function level2() {
         cameraMode: "static"
     })
 
-    return () => {}
+    return () => {
+        sprites.forEach(sprite => game.stage.removeChild(sprite))
+    }
 }
 
 function level3() {
@@ -237,10 +250,10 @@ async function run() {
     const levels = [
         level1,
         level2,
-        level3,
-        level4,
-        level5,
-        level6,
+        // level3,
+        // level4,
+        // level5,
+        // level6,
         credits,
     ]
 
